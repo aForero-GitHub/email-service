@@ -1,0 +1,51 @@
+service: email-service
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: 
+  environment:
+    SENDGRID_API_KEY: 
+    SES_EMAIL_FROM: 
+    REDIS_URL: 
+    SQS_QUEUE_URL: 
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:GetQueueAttributes
+      Resource: 
+
+functions:
+  sendEmail:
+    handler: app.api.email_routes.lambda_handler   # Apuntar al handler correcto en email_router.py
+    events:
+      - http:
+          path: send-email
+          method: post
+          cors: true
+
+  processEmailQueue:
+    handler: app.workers.sqs_worker.process_email_queue
+    events:
+      - sqs:
+          arn: 
+    timeout: 800
+    vpc:
+      securityGroupIds:
+        -  # Cambia a tu grupo de seguridad
+      subnetIds:
+        -  # Cambia a tu subnet
+        - 
+        - 
+
+plugins:
+  - serverless-python-requirements
