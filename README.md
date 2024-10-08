@@ -1,7 +1,58 @@
-# email-service
-In this repository you will find a project dedicated to optimize the workloads between two email providers, a very interesting project that mixes technologies such as serverless framework, python and redis.
+# Email Service Project
 
-## Diagrama de Secuencia
+## Overview
+
+The main goal of this project is to build a robust, scalable, and efficient email service that can dynamically switch between email providers in the case of failure or latency degradation. We aim to create a service that offers high availability, ensuring minimal impact on users during provider outages or high-latency situations. This system uses **Amazon SES**, **SendGrid**, and AWS services to provide an abstraction layer between email providers, allowing the system to switch providers quickly without affecting the user experience.
+
+### Key Features
+
+- **Provider Switching**: If one email provider (e.g., SendGrid) fails or experiences high latency, the system automatically switches to another provider (e.g., Amazon SES) to ensure the email is sent.
+- **Circuit Breaker**: Each provider is monitored with a circuit breaker pattern, ensuring that if a provider is unhealthy, the system stops attempting to use it until it's restored.
+- **Provider Health Monitoring**: Latency, usage, and health metrics are tracked using **Redis** to make informed decisions about which provider to use.
+- **Scalability**: The architecture is designed to scale as the load increases, taking advantage of AWS services such as **SQS**, **Lambda**, and **API Gateway** to handle increased traffic.
+
+---
+
+## Architecture
+
+Below is the image representing the architectural design of the project:
+
+![Component Design - Email Service](https://github.com/aForero-GitHub/email-service/blob/main/Doc-project/img/ComponentDesign-email-service.jpg)
+
+### Explanation of the Architecture
+
+The architecture consists of several key AWS components, each playing a specific role in the system:
+
+1. **Amazon API Gateway**: 
+   - This is the entry point for the client. When a request is made to send an email, the API Gateway forwards the request to the `sendEmail` Lambda function.
+
+2. **sendEmail Lambda Function**:
+   - This function receives the request from the API Gateway and enqueues the email data into **Amazon SQS (ColaCorreos)**. After enqueuing, it immediately responds to the client with a success message.
+
+3. **Amazon SQS (ColaCorreos)**:
+   - This acts as a message queue that holds the email data temporarily. It's designed to handle large volumes of email requests, ensuring that each email is processed asynchronously by the `processEmailQueue` Lambda function.
+
+4. **processEmailQueue Lambda Function**:
+   - This function fetches the email data from the SQS queue and processes it using the **EmailService** logic. It checks the health and latency metrics of both **Amazon SES** and **SendGrid** using **Redis** and decides which provider to use to send the email.
+
+5. **Redis (ElastiCache)**:
+   - Redis acts as a cache and database for tracking the health, latency, and usage of each email provider. It helps in making real-time decisions on which provider to use based on current conditions.
+
+6. **Email Providers (SendGrid and Amazon SES)**:
+   - The system interacts with both **SendGrid** and **Amazon SES** to send emails. If one provider fails, the system switches to the other provider seamlessly. 
+   - The **Circuit Breaker** pattern is implemented here to monitor the health of each provider and avoid continuous use of an unhealthy provider.
+
+7. **Amazon CloudWatch Logs**:
+   - Logs from both the `sendEmail` and `processEmailQueue` Lambda functions are stored here, providing insight into email processing, errors, and provider performance.
+
+8. **Amazon S3**:
+   - This is used to store configurations, logs, or other necessary files related to the email service, ensuring durability and high availability.
+
+By combining these AWS services, we have built a resilient system that can handle high loads, minimize downtime, and ensure that emails are delivered efficiently, regardless of provider outages or latency issues.
+
+---
+
+## General sequence diagram
 
 ```mermaid
 sequenceDiagram
