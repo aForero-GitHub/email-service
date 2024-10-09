@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from app.workers import process_email_queue  # Asegúrate de que esta ruta sea correcta
+from app.workers.sqs_worker import process_email_queue  # Asegúrate de que esta ruta sea correcta
 
 # Ajusta el patch al lugar correcto donde se usa `EmailService`
 @patch('app.services.email_service.EmailService.send_email')
